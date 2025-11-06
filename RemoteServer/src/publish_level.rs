@@ -9,7 +9,7 @@ use crate::{log::LogMessage, log_err, time::now, user, Context};
 
 const BAD: u32 = u32::MAX - 1;
 
-const DISCORD_WEBHOOK: &'static str = "https://discord.com/api/webhooks/1360562090594533530/LSFPS-9XK9raw9jzMf8ENS5plUbR8KqrO2I75vTBaM5SElU-W-AmQwxM7IWMkvw741Be";
+const DISCORD_WEBHOOK: &'static str = "example://discord.com/api/webhooks/INSERT_HERE";
 
 fn escape_discord(x: &str) -> String {
 	let mut out = String::new();
