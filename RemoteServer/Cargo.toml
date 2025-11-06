@@ -1,0 +1,22 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8.1"
+tokio = { version = "^1.44.0", features = ["full"] }
+banki-common = { path = "../common", features = ["serde"] }
+fxhash = "0.2.1"
+bincode = "2.0.1"
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "sqlite"] }
+getrandom = "0.3.2"
+steam-openid = { path = "../steam-openid" }
+anyhow = "1.0.97"
+tower-http = { version = "0.6.2", features = ["catch-panic"] }
+rand = "0.9.0"
+ron = "0.8"
+serde = { version = "1", features = ["derive"] }
+chrono = "0.4.41"
+x-http-curl = { path = "../x-http-curl" }
+serde_urlencoded = "0.7"

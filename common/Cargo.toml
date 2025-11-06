@@ -1,0 +1,11 @@
+[package]
+name = "banki-common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bincode = "2.0.1"
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+serde = ["dep:serde"]

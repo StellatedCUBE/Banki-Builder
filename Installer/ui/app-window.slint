@@ -1,0 +1,518 @@
+import { Button, LineEdit, ProgressIndicator } from "std-widgets.slint";
+
+enum EPage {
+    Loading,
+    SelectInstall,
+    ManageInstall,
+    Installing,
+    Error,
+    ConfirmUninstall,
+    OutOfDateInstaller,
+}
+
+enum EInstallStatus {
+    Invalid,
+    Vanilla,
+    BankiBuilder,
+    OutOfDate,
+}
+
+component Logo inherits HorizontalLayout {
+    alignment: center;
+    padding-left: 64px;
+    padding-right: 64px;
+
+    Image {
+        source: @image-url("logo-en.png");
+        horizontal-alignment: center;
+        max-width: 724px;
+    }
+}
+
+component PageSelectInstall inherits Rectangle {
+    in-out property <string> path;
+    in-out property <bool> install-valid;
+    callback browse();
+    callback select();
+
+    VerticalLayout {
+        padding-top: 64px;
+        padding-bottom: 32px;
+        alignment: start;
+
+        Logo {}
+
+        Rectangle {
+            height: 32px;
+        }
+
+        Text {
+            text: "Select your Kubinashi Recollection install:";
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: "(You must use an install managed by Steam)";
+            horizontal-alignment: center;
+            font-size: 14px;
+        }
+
+        Rectangle {
+            height: 12px;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            padding-left: 64px;
+            padding-right: 64px;
+            spacing: 8px;
+
+            LineEdit {
+                min-width: 240px;
+                preferred-width: 50% * root.width;
+                text <=> path;
+            }
+
+            Button {
+                text: "Browse";
+                clicked => { browse(); }
+            }
+        }
+
+        Rectangle {
+            height: 32px;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+
+            Button {
+                text: "Select";
+                min-height: 48px;
+                preferred-width: 100px;
+
+                enabled <=> install-valid;
+
+                clicked => { select(); }
+            }
+        }
+    }
+}
+
+component PageManageInstall inherits Rectangle {
+    in-out property <EInstallStatus> status;
+    in-out property <string> path;
+    in property <bool> can-play;
+    in property <bool> proton;
+    
+    callback switch-install();
+    callback install();
+    callback uninstall();
+    callback play();
+
+    VerticalLayout {
+        padding-top: 64px;
+        padding-bottom: 32px;
+        alignment: start;
+
+        Logo {}
+
+        Rectangle {
+            height: 32px;
+        }
+
+        Text {
+            text: "Banki Builder is";
+            horizontal-alignment: center;
+        }
+
+        if status == EInstallStatus.Vanilla: Text {
+            text: "Not Installed";
+            font-size: 20px;
+            horizontal-alignment: center;
+            color: red;
+        }
+
+        if status == EInstallStatus.BankiBuilder: Text {
+            text: "Installed";
+            font-size: 20px;
+            horizontal-alignment: center;
+            color: green;
+        }
+
+        if status == EInstallStatus.OutOfDate: Text {
+            text: "Out of Date";
+            font-size: 20px;
+            horizontal-alignment: center;
+            color: #bb8800;
+        }
+
+        if !proton: Rectangle {
+            height: 32px;
+        }
+
+        if proton: Rectangle {
+            height: 16px;
+        }
+
+        if proton: HorizontalLayout {
+            alignment: center;
+
+            Rectangle {
+                width: 400px;
+                height: 50px;
+                background: #ff9999;
+                border-color: #ff0000;
+                border-width: 1px;
+
+                VerticalLayout {
+                    Text {
+                        text: "Experiencing crashes?";
+                        horizontal-alignment: center;
+                        font-weight: 700;
+                        color: #400000;
+                    }
+
+                    Text {
+                        text: "Try forcing Steam to use Proton 10";
+                        horizontal-alignment: center;
+                        color: #400000;
+                    }
+                }
+            }
+        }
+
+        if proton: Rectangle {
+            height: 16px;
+        }
+
+        if status == EInstallStatus.Vanilla: HorizontalLayout {
+            alignment: center;
+
+            Button {
+                text: "Install";
+                min-height: 48px;
+                preferred-width: 100px;
+
+                clicked => { install(); }
+            }
+        }
+
+        if status == EInstallStatus.OutOfDate: HorizontalLayout {
+            alignment: center;
+
+            Button {
+                text: "Update";
+                min-height: 48px;
+                preferred-width: 100px;
+
+                clicked => { install(); }
+            }
+        }
+
+        if status != EInstallStatus.Vanilla: HorizontalLayout {
+            alignment: center;
+
+            Button {
+                text: "Play";
+                min-height: status == EInstallStatus.BankiBuilder ? 48px : 0;
+                preferred-width: 100px;
+                enabled: can-play;
+
+                clicked => { play(); }
+            }
+        }
+
+        Rectangle {
+            height: 16px;
+        }
+
+        if status != EInstallStatus.Vanilla: HorizontalLayout {
+            alignment: center;
+
+            Button {
+                text: "Uninstall";
+                preferred-width: 100px;
+
+                clicked => { uninstall(); }
+            }
+        }
+    }
+
+    top-line-1 := Text {
+        x: 4px;
+        y: 4px;
+        color: gray;
+        font-size: 10px;
+        width: root.width - 8px;
+        wrap: TextWrap.char-wrap;
+        text: "Managing: " + path;
+    }
+
+    top-line-2 := Text {
+        x: 4px;
+        y: 4px + top-line-1.height;
+        text: "Switch to another Kubinashi Recollection install";
+        color: #7070b0;
+        font-size: 10px;
+    }
+
+    TouchArea {
+        x: top-line-2.x;
+        y: top-line-2.y;
+        width: top-line-2.width;
+        height: top-line-2.height;
+        mouse-cursor: MouseCursor.pointer;
+
+        clicked => { switch-install(); }
+    }
+}
+
+component PageInstall inherits Rectangle {
+    in-out property <float> progress;
+    in-out property <EInstallStatus> status;
+
+    VerticalLayout {
+        padding-top: 64px;
+        padding-bottom: 32px;
+        alignment: start;
+
+        Logo {}
+
+        Rectangle {
+            height: 32px;
+        }
+
+        Text {
+            text: status == EInstallStatus.OutOfDate ? "Updating" : "Installing";
+            horizontal-alignment: center;
+        }
+
+        if status != EInstallStatus.OutOfDate: Text {
+            text: "(This can take a while)";
+            horizontal-alignment: center;
+        }
+
+        Rectangle {
+            height: 32px;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+
+            ProgressIndicator {
+                width: 200px;
+                height: 12px;
+                progress: progress;
+                animate progress {
+                    duration: 250ms;
+                    easing: ease-out;
+                }
+            }
+        }
+    }
+}
+
+component PageError inherits Rectangle {
+    in-out property <string> message;
+    callback back();
+
+    VerticalLayout {
+        padding-top: 64px;
+        padding-bottom: 32px;
+        alignment: start;
+
+        Logo {}
+
+        Rectangle {
+            height: 32px;
+        }
+
+        Text {
+            text: "An error occured:";
+            horizontal-alignment: center;
+            color: red;
+        }
+
+        Text {
+            text <=> message;
+            horizontal-alignment: center;
+            font-family: "monospace";
+        }
+
+        Rectangle {
+            height: 32px;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+
+            Button {
+                text: "Back";
+                preferred-width: 100px;
+
+                clicked => { back(); }
+            }
+        }
+    }
+}
+
+component PageConfirmUninstall {
+    in-out property <EPage> page;
+    callback uninstall();
+
+    VerticalLayout {
+        padding-top: 64px;
+        padding-bottom: 32px;
+        alignment: start;
+
+        Logo {}
+
+        Rectangle {
+            height: 32px;
+        }
+
+        Text {
+            text: "Are you sure you want to uninstall Banki Builder?";
+            horizontal-alignment: center;
+        }
+
+        Rectangle {
+            height: 16px;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+
+            Button {
+                text: "No";
+                preferred-width: 120px;
+
+                clicked => { page = EPage.ManageInstall; }
+            }
+
+            Button {
+                text: "Yes, uninstall";
+                preferred-width: 120px;
+
+                clicked => { uninstall(); }
+            }
+        }
+    }
+}
+
+component PageOutOfDateInstaller inherits Rectangle {
+    callback open-site();
+
+    VerticalLayout {
+        alignment: center;
+
+        Text {
+            text: "This program is out of date.";
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: "Please download the latest version from";
+            horizontal-alignment: center;
+        }
+
+        link := Text {
+            text: "https://banki-builder.shinten.moe/";
+            color: #0000dd;
+            horizontal-alignment: center;
+        }
+    }
+
+    TouchArea {
+        x: link.x;
+        y: link.y;
+        width: link.width;
+        height: link.height;
+        mouse-cursor: pointer;
+
+        clicked => { open-site(); }
+    }
+}
+
+export component AppWindow inherits Window {
+    in-out property <EPage> page: EPage.Loading;
+    in-out property <string> path: "";
+    in-out property <bool> install-valid: false;
+    in-out property <EInstallStatus> install-status: EInstallStatus.Invalid;
+    in-out property <float> progress: 0.0;
+    in-out property <string> error-message: "";
+    in-out property <bool> can-play: true;
+    in-out property <bool> proton: false;
+
+    callback browse();
+    callback select();
+    callback switch-install();
+    callback install();
+    callback uninstall();
+    callback play();
+    callback open-site();
+
+    preferred-width: 640px;
+    preferred-height: 480px;
+    max-width: 2048px;
+    default-font-size: 16px;
+    title: "Banki Builder";
+    icon: @image-url("icon.png");
+
+    PageSelectInstall {
+        width: parent.width;
+        height: parent.height;
+        visible: page == EPage.SelectInstall;
+        path <=> path;
+        install-valid <=> install-valid;
+        browse => { browse(); }
+        select => { select(); }
+    }
+
+    PageManageInstall {
+        width: parent.width;
+        height: parent.height;
+        visible: page == EPage.ManageInstall;
+        status <=> install-status;
+        path <=> path;
+        proton: proton && install-status != EInstallStatus.Vanilla;
+        can-play: can-play;
+        switch-install => { switch-install(); }
+        install => { install(); }
+        uninstall => { page = EPage.ConfirmUninstall; }
+        play => { play(); }
+    }
+
+    PageInstall {
+        width: parent.width;
+        height: parent.height;
+        visible: page == EPage.Installing;
+        progress <=> progress;
+        status <=> install-status;
+    }
+
+    PageError {
+        width: parent.width;
+        height: parent.height;
+        visible: page == EPage.Error;
+        message <=> error-message;
+        back => { page = EPage.ManageInstall; }
+    }
+
+    PageConfirmUninstall {
+        width: parent.width;
+        height: parent.height;
+        visible: page == EPage.ConfirmUninstall;
+        page <=> page;
+        uninstall => { uninstall(); }
+    }
+
+    PageOutOfDateInstaller {
+        width: parent.width;
+        height: parent.height;
+        visible: page == EPage.OutOfDateInstaller;
+        open-site => { open-site(); }
+    }
+}

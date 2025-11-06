@@ -1,0 +1,56 @@
+MAGIC
+"
+"
+"
+"
+"
+"
+"
+HEADER LENGTH
+"
+-- HEADER
+VERSION
+"
+AUTHOR
+"
+"
+"
+"
+"
+"
+"
+ONLINE ID
+"
+"
+"
+BODY LENGTH
+"
+"
+"
+BODY LENGTH (COMPRESSED)
+"
+"
+"
+FLAGS - LS (PUZZLE PIECE, -, -, -, -, -, -, -) MS
+CHARACTER
+HEADS
+THEME
+TAGS
+"
+"
+"
+"
+"
+"
+"
+NAME
+...
+-- BODY
+MUSIC
+PRECIPITATION OVERRIDE
+OBJECT COUNT
+"
+"
+"
+OBJECTS
+...
